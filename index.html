@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One in Eight Billion</title>
+<style>
+  :root{
+    --bg:#0d1117; --card:#161b22; --line:#222b36;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#f5c542; --accent2:#58a6ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Sans","Noto Sans JP",sans-serif;
+    display:flex; align-items:flex-start; justify-content:center; padding:24px; line-height:1.6;
+  }
+  .card{
+    width:100%; max-width:600px; background:var(--card);
+    border:1px solid var(--line); border-radius:16px; padding:32px;
+  }
+  .mark{
+    display:inline-block; font-weight:700; letter-spacing:.5px;
+    border:1px solid var(--accent); color:var(--accent);
+    padding:2px 8px; border-radius:6px; font-size:14px;
+  }
+  h1{font-size:22px; margin:14px 0 4px}
+  .tag{color:var(--muted); font-size:14px; margin:0 0 24px}
+  label{display:block; font-size:13px; color:var(--muted); margin:0 0 6px}
+  .tabs{
+    display:grid; grid-template-columns:1fr 1fr; gap:6px;
+    background:#0d1117; border:1px solid var(--line); border-radius:10px; padding:4px; margin:0 0 22px;
+  }
+  .tab{
+    margin:0; width:100%; border:0; border-radius:7px; padding:9px 10px;
+    background:transparent; color:var(--muted); font-size:14px; font-weight:700; cursor:pointer;
+  }
+  .tab.active{background:var(--accent); color:#1b1500}
+  .panel{display:none}
+  .panel.active{display:block}
+  .row{display:flex; gap:10px}
+  .field{margin-top:14px}
+  input,select{
+    background:#0d1117; color:var(--fg); border:1px solid var(--line);
+    border-radius:10px; padding:12px 14px; font-size:16px; width:100%;
+  }
+  select{width:120px; flex:0 0 120px}
+  .hint{margin:8px 0 0; color:var(--muted); font-size:12px}
+  .primary{
+    margin-top:16px; width:100%; background:var(--accent); color:#1b1500;
+    border:0; border-radius:10px; padding:13px; font-size:16px; font-weight:700; cursor:pointer;
+  }
+  .primary:hover,.tab:hover{filter:brightness(1.05)}
+  .examples{margin-top:14px; display:flex; gap:8px; flex-wrap:wrap}
+  .chip{
+    font-size:12px; color:var(--muted); border:1px solid var(--line);
+    background:#0d1117; padding:6px 10px; border-radius:999px; cursor:pointer;
+  }
+  .chip:hover{color:var(--fg); border-color:var(--accent2)}
+  .out{margin-top:26px; display:none}
+  .pct{font-size:44px; font-weight:800; color:var(--accent); line-height:1.1}
+  .pct.precise{font-size:34px}
+  .pct.ultra{font-size:26px}
+  .pct span{overflow-wrap:anywhere}
+  .pct small{display:block; margin-top:4px; font-size:18px; color:var(--muted); font-weight:600}
+  .rank{margin-top:8px; font-size:16px}
+  .rank b{color:var(--accent2)}
+  .bar{height:10px; background:#0d1117; border:1px solid var(--line); border-radius:999px; margin:18px 0 6px; overflow:hidden}
+  .bar > i{display:block; height:100%; background:linear-gradient(90deg,var(--accent2),var(--accent)); width:0}
+  .barlabel{display:flex; justify-content:space-between; font-size:11px; color:var(--muted)}
+  .msg{margin-top:18px; padding:14px 16px; background:#0d1117; border:1px solid var(--line); border-radius:10px; font-size:14px}
+  .rank-table{width:100%; margin-top:16px; border-collapse:collapse; font-size:12px; color:var(--muted)}
+  .rank-table th,.rank-table td{padding:8px 0; border-bottom:1px solid var(--line); text-align:left}
+  .rank-table th:last-child,.rank-table td:last-child{text-align:right}
+  details{margin-top:22px; font-size:13px; color:var(--muted)}
+  details summary{cursor:pointer; color:var(--accent2)}
+  details p{margin:10px 0}
+  code{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="card">
+  <span class="mark">1∕8B</span>
+  <h1>One in Eight Billion</h1>
+  <p class="tag">Compare your yearly income or net worth against the global picture, without pretending the fuzzy parts are exact.</p>
+
+  <div class="tabs" role="tablist" aria-label="Comparison mode">
+    <button class="tab active" type="button" data-mode="income" role="tab" aria-selected="true">Income</button>
+    <button class="tab" type="button" data-mode="wealth" role="tab" aria-selected="false">Wealth</button>
+  </div>
+
+  <section class="panel active" id="incomePanel">
+    <label for="inc">Annual household income (before tax)</label>
+    <div class="row">
+      <input id="inc" type="text" inputmode="numeric" placeholder="5,000,000" value="5,000,000">
+      <select id="cur">
+        <option value="JPY" selected>JPY ¥</option>
+        <option value="USD">USD $</option>
+        <option value="EUR">EUR €</option>
+        <option value="GBP">GBP £</option>
+        <option value="CNY">CNY ¥</option>
+        <option value="KRW">KRW ₩</option>
+        <option value="INR">INR ₹</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="people">People supported by that income</label>
+      <input id="people" type="number" inputmode="numeric" min="1" step="1" value="2">
+      <p class="hint">The comparison uses household income per person, so the unit matches the global per-person distribution.</p>
+    </div>
+
+    <div class="examples">
+      <span class="chip income-chip" data-v="5000000" data-c="JPY" data-p="2">Japan ¥5M / 2 people</span>
+      <span class="chip income-chip" data-v="60000" data-c="USD" data-p="1">US $60k / 1 person</span>
+      <span class="chip income-chip" data-v="3000" data-c="USD" data-p="1">Model median $3k / 1 person</span>
+      <span class="chip income-chip" data-v="1000000" data-c="USD" data-p="1">$1M / 1 person</span>
+    </div>
+
+    <button class="primary" id="goIncome" type="button">Reveal my income rank</button>
+  </section>
+
+  <section class="panel" id="wealthPanel">
+    <label for="wealth">Net worth (USD, assets minus debts)</label>
+    <input id="wealth" type="text" inputmode="numeric" placeholder="100,000" value="100,000">
+    <p class="hint">Wealth mode uses nominal USD net worth per adult, not PPP and not yearly income.</p>
+
+    <div class="examples">
+      <span class="chip wealth-chip" data-v="10000">$10k</span>
+      <span class="chip wealth-chip" data-v="100000">$100k</span>
+      <span class="chip wealth-chip" data-v="1000000">$1M</span>
+      <span class="chip wealth-chip" data-v="1000000000">$1B</span>
+    </div>
+
+    <table class="rank-table" aria-label="UBS 2024 global net worth bands">
+      <thead><tr><th>Net worth band</th><th>Adults in band</th></tr></thead>
+      <tbody>
+        <tr><td>Under $10k</td><td>41.3%</td></tr>
+        <tr><td>$10k-$100k</td><td>40.7%</td></tr>
+        <tr><td>$100k-$1M</td><td>about 16.4%</td></tr>
+        <tr><td>Over $1M</td><td>1.6%</td></tr>
+      </tbody>
+    </table>
+
+    <button class="primary" id="goWealth" type="button">Reveal my wealth rank</button>
+  </section>
+
+  <div class="out" id="out">
+    <div class="pct"><span id="topPct">—</span><small id="belowLabel">of humanity is below you</small></div>
+    <div class="bar"><i id="barfill"></i></div>
+    <div class="barlabel"><span>poorest</span><span>richest</span></div>
+    <div class="rank" id="rank"></div>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <details>
+    <summary>How is this calculated? (v1 — honest about its limits)</summary>
+    <p><b>Income mode:</b> household income is converted from your currency
+    into <b>international dollars (PPP)</b> — what the money actually buys — then divided by the number
+    of people supported by that income. That per-person amount is placed on a global per-person income model.</p>
+    <p>The current model is still provisional: a <b>log-normal</b> body with rough anchors
+    (<code>$3,000</code>/yr median and about <code>$55,000</code>/yr at the 99th percentile, PPP per person),
+    then a <b>Pareto (Fermi) estimate</b> above the top 1%. These anchors are placeholders until we replace
+    them with World Bank PIP percentile data.</p>
+    <p><b>Wealth mode:</b> net worth is compared in nominal USD against UBS Global Wealth Report 2025
+    wealth bands for adults at the end of 2024. Inside each broad band, the app interpolates; above billionaire
+    territory, it uses a small Fermi tail. Wealth is a stock, not income, so this is a separate comparison.</p>
+    <p>This is a <b>v1 approximation</b>: gross pre-tax income, rough PPP factors, broad wealth bands, and
+    adjustable tails. Numbers will move as we refine the data, currency handling, and tax treatment.</p>
+  </details>
+</div>
+
+<script>
+// ---- Global income distribution model (v1, all constants exposed for refinement) ----
+// Sources to firm up next: World Bank PIP percentiles for income/consumption distribution,
+// World Bank WDI PA.NUS.PPP for PPP conversion factors, and UN DESA WPP for rounded population.
+const POP        = 8.1e9;     // rounded world population used for v1 rank display
+const MEDIAN     = 3000;      // rough int$ / person / year (PPP) model median placeholder
+const SIGMA      = 1.25;      // log-normal shape placeholder; puts the 99th pct near $55k
+const MU         = Math.log(MEDIAN);
+const Z99        = 2.326348;  // z for the 99th percentile
+const SPLICE_X   = Math.exp(MU + Z99 * SIGMA);  // where the Pareto tail takes over (≈ $54.8k)
+const TAIL_ALPHA = 2.0;       // Pareto tail shape (the "Fermi" region above the top 1%)
+
+// PPP conversion factors: local currency units per 1 international$ (rough v1 placeholders, not audited facts)
+const PPP = { USD:1, JPY:100, EUR:0.72, GBP:0.69, CNY:4.2, KRW:860, INR:23 };
+
+// ---- Global net worth distribution model (v1) ----
+// Source: UBS Global Wealth Report 2025, global wealth pyramid for 2024.
+// Scope: adults in 56 markets representing more than 92% of global personal wealth; nominal USD, not PPP.
+const WEALTH_ADULTS = 3.81e9; // derived from UBS 2024 band counts: 1.57bn + 1.55bn + 628m + 60m
+const WEALTH_POINTS = [
+  { x: 10_000,          below: 0.413 },
+  { x: 100_000,         below: 0.413 + 0.407 },
+  { x: 1_000_000,       below: 0.413 + 0.407 + 0.164 },
+  { x: 1_000_000_000,   below: 1 - 2_891 / WEALTH_ADULTS },
+  { x: 50_000_000_000,  below: 1 - 31 / WEALTH_ADULTS },
+  { x: 100_000_000_000, below: 1 - 16 / WEALTH_ADULTS },
+];
+const WEALTH_ULTRA_ALPHA = 1.0; // Fermi tail above USD 100bn; intentionally marked as soft
+
+function parseNumber(value){
+  return parseFloat(String(value).replace(/[, ]/g,'')) || 0;
+}
+
+function erf(x){
+  const s = x < 0 ? -1 : 1; x = Math.abs(x);
+  const t = 1/(1 + 0.3275911*x);
+  const y = 1 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*Math.exp(-x*x);
+  return s*y;
+}
+function normCdf(z){ return 0.5*(1 + erf(z/Math.SQRT2)); }
+
+// share of the world poorer than someone with `intDollars` int$/yr
+function cdf(intDollars){
+  if (intDollars <= 0) return 0;
+  if (intDollars < SPLICE_X){
+    return normCdf((Math.log(intDollars) - MU) / SIGMA);
+  }
+  // top 1% spread by a Pareto tail, continuous at the splice point
+  return 1 - 0.01 * Math.pow(SPLICE_X / intDollars, TAIL_ALPHA);
+}
+
+// share of the world richer than someone with `intDollars` int$/yr
+function ccdf(intDollars){
+  if (intDollars <= 0) return 1;
+  if (intDollars < SPLICE_X) return 1 - cdf(intDollars);
+  return 0.01 * Math.pow(SPLICE_X / intDollars, TAIL_ALPHA);
+}
+
+function fmtRank(n){
+  if (n >= 1e9) return (n/1e9).toFixed(n>=1e10?0:1) + " billion";
+  if (n >= 1e6) return (n/1e6).toFixed(n>=1e7?0:1) + " million";
+  if (n >= 1e3) return Math.round(n/1e3) + " thousand";
+  return Math.max(1, Math.round(n)).toString();
+}
+
+function fmtUSD(n){
+  const sign = n < 0 ? "-$" : "$";
+  return sign + Math.max(0, Math.round(Math.abs(n))).toLocaleString("en-US");
+}
+
+function fmtBelowPct(below, aboveShare){
+  const pct = Math.max(0, Math.min(100, below * 100));
+  if (pct < 99.9) return pct.toFixed(1) + "%";
+
+  let decimals = 2;
+  while (decimals < 12 && Number(pct.toFixed(decimals)) >= 100 && aboveShare > 0){
+    decimals += 1;
+  }
+  if (Number(pct.toFixed(decimals)) >= 100 && aboveShare > 0) return "<100%";
+  return pct.toFixed(decimals) + "%";
+}
+
+function renderResult({ below, aboveShare, label, rankHtml, message }){
+  const pct = below * 100;
+  const topPctText = fmtBelowPct(below, aboveShare);
+  const topPctEl = document.getElementById('topPct');
+  topPctEl.textContent = topPctText;
+  topPctEl.parentElement.classList.toggle('precise', topPctText.length > 8);
+  topPctEl.parentElement.classList.toggle('ultra', topPctText.length > 12);
+  document.getElementById('belowLabel').textContent = label;
+  document.getElementById('barfill').style.width = Math.min(100, Math.max(1.5, pct)) + "%";
+  document.getElementById('rank').innerHTML = rankHtml;
+  document.getElementById('msg').textContent = message;
+  document.getElementById('out').style.display = 'block';
+}
+
+function reframe(topPct){
+  if (topPct >= 99.9) return "You are in the extreme top slice of the world. This is also where the estimate gets softest.";
+  if (topPct >= 99)   return "You are inside roughly the global top 1%. Tens of millions may still have more, but billions have less.";
+  if (topPct >= 95)   return "You are among the richest people alive — top 5% of all humanity. Whatever you call yourself, the world calls you wealthy.";
+  if (topPct >= 80)   return "Comfortably in the global upper fifth. Far more of the world looks up at you than down.";
+  if (topPct >= 50)   return "Around or above the global middle. At least half of humanity lives on less by this measure.";
+  return "Below the global middle by this measure — and still ahead of hundreds of millions of people.";
+}
+
+function computeIncome(){
+  const rawHousehold = parseNumber(document.getElementById('inc').value);
+  const cur = document.getElementById('cur').value;
+  const peopleInput = parseNumber(document.getElementById('people').value) || 1;
+  const people = Math.max(1, peopleInput);
+  const intD = (rawHousehold / (PPP[cur] || 1)) / people;
+
+  const aboveShare = ccdf(intD);             // fraction richer than you
+  const below   = Math.max(0, Math.min(1, 1 - aboveShare)); // fraction poorer than you
+  const topPct  = below * 100;               // "richer than X% of the world"
+  const aboveN  = Math.max(0, aboveShare * POP); // people richer than you
+  const rankTop = aboveN + 1;                 // your rank from the top
+
+  const richerText = aboveN < 1
+    ? "less than one modelled person out of 8.1&nbsp;billion has more."
+    : "about <b>" + fmtRank(aboveN) + "</b> people out of 8.1&nbsp;billion have more.";
+  renderResult({
+    below,
+    aboveShare,
+    label: "of humanity is below you",
+    rankHtml:
+    "Your input works out to about <b>" + fmtUSD(intD) + "</b> international dollars per person per year. " +
+    "That is roughly position <b>" + fmtRank(rankTop) + "</b> from the top " +
+    "— " + richerText,
+    message: reframe(topPct),
+  });
+}
+
+function wealthCcdf(usd){
+  if (usd <= 0) return 1;
+  if (usd <= WEALTH_POINTS[0].x){
+    const below = WEALTH_POINTS[0].below * (usd / WEALTH_POINTS[0].x);
+    return 1 - below;
+  }
+
+  for (let i = 1; i < WEALTH_POINTS.length; i += 1){
+    const prev = WEALTH_POINTS[i - 1];
+    const next = WEALTH_POINTS[i];
+    if (usd <= next.x){
+      const t = (Math.log(usd) - Math.log(prev.x)) / (Math.log(next.x) - Math.log(prev.x));
+      const below = prev.below + t * (next.below - prev.below);
+      return 1 - below;
+    }
+  }
+
+  return (16 / WEALTH_ADULTS) * Math.pow(100_000_000_000 / usd, WEALTH_ULTRA_ALPHA);
+}
+
+function wealthReframe(topPct){
+  if (topPct >= 99.9999) return "Billionaire territory. The model is still useful for scale, but not for pretending to know the exact rank.";
+  if (topPct >= 98.4)    return "Dollar-millionaire territory globally. UBS puts this group at about 1.6% of adults in its 2024 sample.";
+  if (topPct >= 82)      return "Above the $100k net-worth line. Globally, that is already a small upper slice of adults.";
+  if (topPct >= 41.3)    return "Above the lowest global wealth band, but wealth is lumpy: home equity, debt, and local prices matter a lot.";
+  return "Inside the lowest global wealth band by this measure. Net worth can be low or negative even when income is not.";
+}
+
+function computeWealth(){
+  const netWorth = parseNumber(document.getElementById('wealth').value);
+  const aboveShare = wealthCcdf(netWorth);
+  const below = Math.max(0, Math.min(1, 1 - aboveShare));
+  const topPct = below * 100;
+  const aboveN = Math.max(0, aboveShare * WEALTH_ADULTS);
+  const rankTop = aboveN + 1;
+  const richerText = aboveN < 1
+    ? "less than one modelled adult in the UBS sample has more."
+    : "about <b>" + fmtRank(aboveN) + "</b> adults in the UBS sample have more.";
+
+  renderResult({
+    below,
+    aboveShare,
+    label: "of adults in the UBS 2024 wealth sample are below you",
+    rankHtml:
+    "Your net worth is about <b>" + fmtUSD(netWorth) + "</b>. " +
+    "That is roughly position <b>" + fmtRank(rankTop) + "</b> from the top among adults in the UBS 2024 wealth sample " +
+    "— " + richerText,
+    message: wealthReframe(topPct),
+  });
+}
+
+function setMode(mode){
+  document.querySelectorAll('.tab').forEach(tab => {
+    const active = tab.dataset.mode === mode;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  document.getElementById('incomePanel').classList.toggle('active', mode === 'income');
+  document.getElementById('wealthPanel').classList.toggle('active', mode === 'wealth');
+  document.getElementById('out').style.display = 'none';
+}
+
+document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => setMode(tab.dataset.mode)));
+document.getElementById('goIncome').addEventListener('click', computeIncome);
+document.getElementById('goWealth').addEventListener('click', computeWealth);
+document.getElementById('inc').addEventListener('keydown', e => { if (e.key === 'Enter') computeIncome(); });
+document.getElementById('people').addEventListener('keydown', e => { if (e.key === 'Enter') computeIncome(); });
+document.getElementById('wealth').addEventListener('keydown', e => { if (e.key === 'Enter') computeWealth(); });
+document.querySelectorAll('.income-chip').forEach(c => c.addEventListener('click', () => {
+  document.getElementById('inc').value = Number(c.dataset.v).toLocaleString('en-US');
+  document.getElementById('cur').value = c.dataset.c;
+  document.getElementById('people').value = c.dataset.p || 1;
+  computeIncome();
+}));
+document.querySelectorAll('.wealth-chip').forEach(c => c.addEventListener('click', () => {
+  document.getElementById('wealth').value = Number(c.dataset.v).toLocaleString('en-US');
+  computeWealth();
+}));
+</script>
+</body>
+</html>
