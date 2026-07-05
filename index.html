@@ -70,6 +70,8 @@
   .bar > i{display:block; height:100%; background:linear-gradient(90deg,var(--accent2),var(--accent)); width:0}
   .barlabel{display:flex; justify-content:space-between; font-size:11px; color:var(--muted)}
   .msg{margin-top:18px; padding:14px 16px; background:#0d1117; border:1px solid var(--line); border-radius:10px; font-size:14px}
+  .msg.flip{border-color:var(--accent)}
+  .msg.flip b{color:var(--accent)}
   .rank-table{width:100%; margin-top:16px; border-collapse:collapse; font-size:12px; color:var(--muted)}
   .rank-table th,.rank-table td{padding:8px 0; border-bottom:1px solid var(--line); text-align:left}
   .rank-table th:last-child,.rank-table td:last-child{text-align:right}
@@ -150,6 +152,7 @@
     <div class="bar"><i id="barfill"></i></div>
     <div class="barlabel"><span>poorest</span><span>richest</span></div>
     <div class="rank" id="rank"></div>
+    <div class="msg flip" id="covers"></div>
     <div class="msg" id="msg"></div>
   </div>
 
@@ -165,6 +168,12 @@
     <p><b>Wealth mode:</b> net worth is compared in nominal USD against UBS Global Wealth Report 2025
     wealth bands for adults at the end of 2024. Inside each broad band, the app interpolates; above billionaire
     territory, it uses a small Fermi tail. Wealth is a stock, not income, so this is a separate comparison.</p>
+    <p><b>"Combined income/net worth of the N poorest" line:</b> in income mode this divides your
+    per-person PPP income by a <b>Fermi floor of int$&nbsp;1/day (≈ $365/yr)</b> for the very poorest —
+    surveys cannot resolve that tail, and the log-normal body would otherwise assign them
+    unrealistically tiny incomes and inflate the count. In wealth mode it integrates the model's
+    bottom band (net worth spread evenly from $0 to $10k) and ignores negative net worth,
+    so the real count is likely higher. Both are order-of-magnitude estimates, not facts.</p>
     <p>This is a <b>v1 approximation</b>: gross pre-tax income, rough PPP factors, broad wealth bands, and
     adjustable tails. Numbers will move as we refine the data, currency handling, and tax treatment.</p>
   </details>
@@ -184,6 +193,13 @@ const TAIL_ALPHA = 2.0;       // Pareto tail shape (the "Fermi" region above the
 
 // PPP conversion factors: local currency units per 1 international$ (rough v1 placeholders, not audited facts)
 const PPP = { USD:1, JPY:100, EUR:0.72, GBP:0.69, CNY:4.2, KRW:860, INR:23 };
+
+// Bottom-tail floor for the "covers the N poorest" flip (Fermi estimate, NOT a sourced fact):
+// household surveys cannot resolve the very poorest few thousand individuals, and the
+// log-normal body would assign them absurd near-zero incomes (inflating the count),
+// so we assume the very poorest live on roughly int$ 1/day.
+// Refine against World Bank PIP bottom-percentile means later.
+const BOTTOM_FLOOR = 365;     // int$ / person / year
 
 // ---- Global net worth distribution model (v1) ----
 // Source: UBS Global Wealth Report 2025, global wealth pyramid for 2024.
@@ -228,6 +244,31 @@ function ccdf(intDollars){
   return 0.01 * Math.pow(SPLICE_X / intDollars, TAIL_ALPHA);
 }
 
+// round to 2 significant digits so the display doesn't pretend to more precision than the model has
+function roundSig(n){
+  if (n <= 0) return 0;
+  const mag = Math.pow(10, Math.floor(Math.log10(n)) - 1);
+  return Math.round(n / mag) * mag;
+}
+
+// how many of the world's poorest people together earn about `intDollars` per year.
+// For any realistic input, everyone counted sits below the BOTTOM_FLOOR line,
+// so this is simply income divided by the floor.
+function poorestCoveredIncome(intDollars){
+  return intDollars / BOTTOM_FLOOR;
+}
+
+// how many of the sample's poorest adults together hold about `usd` of net worth.
+// Uses the v1 bottom band (uniform $0..$10k): quantile Q(p) = x*p/b, so the bottom
+// fraction p holds ADULTS * x * p^2 / (2b). Negative net worth is ignored, which
+// understates the count. Any personal input stays inside the bottom band
+// (leaving it would take ~$7.9 trillion), but clamp anyway.
+function poorestCoveredWealth(usd){
+  const band = WEALTH_POINTS[0];
+  const p = Math.sqrt(2 * band.below * usd / (WEALTH_ADULTS * band.x));
+  return Math.min(p, band.below) * WEALTH_ADULTS;
+}
+
 function fmtRank(n){
   if (n >= 1e9) return (n/1e9).toFixed(n>=1e10?0:1) + " billion";
   if (n >= 1e6) return (n/1e6).toFixed(n>=1e7?0:1) + " million";
@@ -252,7 +293,7 @@ function fmtBelowPct(below, aboveShare){
   return pct.toFixed(decimals) + "%";
 }
 
-function renderResult({ below, aboveShare, label, rankHtml, message }){
+function renderResult({ below, aboveShare, label, rankHtml, coversHtml, message }){
   const pct = below * 100;
   const topPctText = fmtBelowPct(below, aboveShare);
   const topPctEl = document.getElementById('topPct');
@@ -262,6 +303,9 @@ function renderResult({ below, aboveShare, label, rankHtml, message }){
   document.getElementById('belowLabel').textContent = label;
   document.getElementById('barfill').style.width = Math.min(100, Math.max(1.5, pct)) + "%";
   document.getElementById('rank').innerHTML = rankHtml;
+  const coversEl = document.getElementById('covers');
+  coversEl.innerHTML = coversHtml || "";
+  coversEl.style.display = coversHtml ? 'block' : 'none';
   document.getElementById('msg').textContent = message;
   document.getElementById('out').style.display = 'block';
 }
@@ -291,9 +335,16 @@ function computeIncome(){
   const richerText = aboveN < 1
     ? "less than one modelled person out of 8.1&nbsp;billion has more."
     : "about <b>" + fmtRank(aboveN) + "</b> people out of 8.1&nbsp;billion have more.";
+  const covered = poorestCoveredIncome(intD);
+  const coversHtml = covered >= 2
+    ? "Flip the view: your income alone roughly equals the <b>combined annual income of the " +
+      fmtRank(roundSig(covered)) + " poorest people</b> on Earth — assuming the very poorest " +
+      "live on about int$&nbsp;1 a day (a Fermi floor; see the notes below)."
+    : "";
   renderResult({
     below,
     aboveShare,
+    coversHtml,
     label: "of humanity is below you",
     rankHtml:
     "Your input works out to about <b>" + fmtUSD(intD) + "</b> international dollars per person per year. " +
@@ -341,10 +392,17 @@ function computeWealth(){
   const richerText = aboveN < 1
     ? "less than one modelled adult in the UBS sample has more."
     : "about <b>" + fmtRank(aboveN) + "</b> adults in the UBS sample have more.";
+  const covered = poorestCoveredWealth(netWorth);
+  const coversHtml = covered >= 2
+    ? "Flip the view: your net worth alone roughly equals the <b>combined net worth of the " +
+      fmtRank(roundSig(covered)) + " poorest adults</b> in the sample — treating the bottom band " +
+      "as spread evenly from $0 to $10k and ignoring debt, so the real count is likely even higher."
+    : "";
 
   renderResult({
     below,
     aboveShare,
+    coversHtml,
     label: "of adults in the UBS 2024 wealth sample are below you",
     rankHtml:
     "Your net worth is about <b>" + fmtUSD(netWorth) + "</b>. " +
