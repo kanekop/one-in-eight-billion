@@ -144,8 +144,8 @@
   </svg>
 
   <div class="viewtoggle" role="tablist" aria-label="Result style">
-    <button class="vbtn active" type="button" data-view="text" role="tab" aria-selected="true">Text</button>
-    <button class="vbtn" type="button" data-view="visual" role="tab" aria-selected="false">Visual</button>
+    <button class="vbtn" type="button" data-view="text" role="tab" aria-selected="false">Text</button>
+    <button class="vbtn active" type="button" data-view="visual" role="tab" aria-selected="true">Visual</button>
   </div>
 
   <div class="tabs" role="tablist" aria-label="Comparison mode">
@@ -423,8 +423,8 @@ function fmtBelowPct(below, aboveShare){
 }
 
 // ---- Two result views over the same numbers: "text" (prose) and "visual" (glanceable) ----
-let view = 'text';
-try { view = localStorage.getItem('oieb-view') || 'text'; } catch (e) {}
+let view = 'visual';
+try { view = localStorage.getItem('oieb-view') || 'visual'; } catch (e) {}
 let lastData = null;
 
 function render(data){
