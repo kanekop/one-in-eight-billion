@@ -77,6 +77,53 @@
   .rank-table{width:100%; margin-top:16px; border-collapse:collapse; font-size:12px; color:var(--muted)}
   .rank-table th,.rank-table td{padding:8px 0; border-bottom:1px solid var(--line); text-align:left}
   .rank-table th:last-child,.rank-table td:last-child{text-align:right}
+  /* ---- Visual view (second UI: glanceable, minimal text) ---- */
+  .viewtoggle{display:flex; justify-content:flex-end; margin:0 0 12px}
+  .vbtn{
+    border:1px solid var(--line); background:#0d1117; color:var(--muted);
+    font-size:12px; font-weight:700; padding:5px 14px; cursor:pointer;
+  }
+  .vbtn:first-child{border-radius:8px 0 0 8px}
+  .vbtn:last-child{border-radius:0 8px 8px 0; border-left:0}
+  .vbtn.active{background:var(--accent2); color:#04121f; border-color:var(--accent2)}
+  .vbtn:hover{filter:brightness(1.1)}
+  .vout{margin-top:26px; display:none}
+  .vhero{text-align:center; padding:6px 0 2px}
+  .vhero .vtop{font-size:13px; font-weight:700; letter-spacing:2px; color:var(--muted)}
+  .vhero .vpct{font-size:68px; font-weight:800; color:var(--accent); line-height:1.05; letter-spacing:-1px}
+  .vhero .vpct.small{font-size:48px}
+  .vhero .vscope{font-size:13px; color:var(--muted); margin-top:4px}
+  .vmeter{margin:22px 0 0; position:relative; height:14px; background:#0d1117; border:1px solid var(--line); border-radius:999px}
+  .vmeter i{position:absolute; top:2px; bottom:2px; left:2px; border-radius:999px; background:var(--accent); opacity:.3; width:0}
+  .vmeter b{
+    position:absolute; top:50%; width:16px; height:16px; border-radius:50%;
+    background:var(--accent); border:2px solid var(--card); transform:translate(-50%,-50%);
+  }
+  .vmeterlabel{display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:6px}
+  .vtiles{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:18px}
+  .vtile{background:#0d1117; border:1px solid var(--line); border-radius:12px; padding:14px 16px}
+  .vtile .tlabel{font-size:11px; color:var(--muted); letter-spacing:.4px; text-transform:uppercase}
+  .vtile .tvalue{font-size:22px; font-weight:800; margin-top:4px; overflow-wrap:anywhere}
+  .vtile .tsub{font-size:11px; color:var(--muted); margin-top:2px}
+  .vcmp{margin-top:12px; background:#0d1117; border:1px solid var(--line); border-radius:12px; padding:16px}
+  .vcmp.down{border-color:rgba(245,197,66,.4)}
+  .vcmp.up{border-color:rgba(88,166,255,.4)}
+  .vcmp .clabel{font-size:12px; color:var(--muted)}
+  .vcmp .cnum{font-size:32px; font-weight:800; line-height:1.15; margin-top:2px}
+  .vcmp.down .cnum{color:var(--accent)}
+  .vcmp.up .cnum{color:var(--accent2)}
+  .vcmp .csub{font-size:12px; color:var(--muted); margin-top:2px}
+  .picto{display:flex; flex-wrap:wrap; gap:3px; margin-top:12px}
+  .picto svg{width:13px; height:13px; fill:currentColor; opacity:.9}
+  .vcmp.down .picto{color:var(--accent)}
+  .vcmp.up .picto{color:var(--accent2)}
+  .pictokey{font-size:11px; color:var(--muted); margin-top:8px}
+  .vfoot{margin-top:16px; font-size:11px; color:var(--muted); text-align:center}
+  @media (max-width:480px){
+    .vhero .vpct{font-size:52px}
+    .vhero .vpct.small{font-size:38px}
+    .vtiles{grid-template-columns:1fr}
+  }
   details{margin-top:22px; font-size:13px; color:var(--muted)}
   details summary{cursor:pointer; color:var(--accent2)}
   details p{margin:10px 0}
@@ -88,6 +135,18 @@
   <span class="mark">1∕8B</span>
   <h1>One in Eight Billion</h1>
   <p class="tag">Compare your yearly income or net worth against the global picture, without pretending the fuzzy parts are exact.</p>
+
+  <svg style="display:none" aria-hidden="true">
+    <symbol id="pfig" viewBox="0 0 24 24">
+      <circle cx="12" cy="4.6" r="3.4"/>
+      <path d="M12 9.2c-3.4 0-5.6 2.2-5.6 5.6V23h11.2v-8.2c0-3.4-2.2-5.6-5.6-5.6z"/>
+    </symbol>
+  </svg>
+
+  <div class="viewtoggle" role="tablist" aria-label="Result style">
+    <button class="vbtn active" type="button" data-view="text" role="tab" aria-selected="true">Text</button>
+    <button class="vbtn" type="button" data-view="visual" role="tab" aria-selected="false">Visual</button>
+  </div>
 
   <div class="tabs" role="tablist" aria-label="Comparison mode">
     <button class="tab active" type="button" data-mode="income" role="tab" aria-selected="true">Income</button>
@@ -159,6 +218,43 @@
     <div class="msg" id="msg"></div>
   </div>
 
+  <div class="vout" id="vout">
+    <div class="vhero">
+      <div class="vtop">YOU ARE IN THE</div>
+      <div class="vpct" id="vPct">—</div>
+      <div class="vscope" id="vScope"></div>
+    </div>
+    <div class="vmeter" aria-hidden="true"><i id="vFill"></i><b id="vDot"></b></div>
+    <div class="vmeterlabel"><span>poorest</span><span>richest</span></div>
+    <div class="vtiles">
+      <div class="vtile">
+        <div class="tlabel">Rank from the top</div>
+        <div class="tvalue" id="vRank">—</div>
+        <div class="tsub" id="vRankSub"></div>
+      </div>
+      <div class="vtile">
+        <div class="tlabel" id="vAmtLabel">Your money</div>
+        <div class="tvalue" id="vAmt">—</div>
+        <div class="tsub" id="vAmtSub"></div>
+      </div>
+    </div>
+    <div class="vcmp down" id="vDown">
+      <div class="clabel" id="vDownLabel"></div>
+      <div class="cnum" id="vDownNum"></div>
+      <div class="csub" id="vDownSub"></div>
+      <div class="picto" id="vDownPicto" role="img"></div>
+      <div class="pictokey" id="vDownKey"></div>
+    </div>
+    <div class="vcmp up" id="vUp">
+      <div class="clabel" id="vUpLabel"></div>
+      <div class="cnum" id="vUpNum"></div>
+      <div class="csub" id="vUpSub"></div>
+      <div class="picto" id="vUpPicto" role="img"></div>
+      <div class="pictokey" id="vUpKey"></div>
+    </div>
+    <p class="vfoot">≈ order-of-magnitude estimates — same model and same numbers as the Text view; see "How is this calculated?" below.</p>
+  </div>
+
   <details>
     <summary>How is this calculated? (v1 — honest about its limits)</summary>
     <p><b>Income mode:</b> household income is converted from your currency
@@ -185,6 +281,10 @@
     against roughly <b>US$400&nbsp;billion</b>, the scale of the richest individual's net worth
     on the Forbes / Bloomberg lists as of 2025 — a number that moves daily with markets.
     Order of magnitude only.</p>
+    <p><b>Text vs Visual view:</b> both are rendered from the same computation — the Visual view only
+    changes presentation. Its big numbers are rounded to at most 2 significant digits, and in the
+    figure charts one figure stands for 1, 10, 100, … people (the key under each chart says which),
+    so the pictograms never imply more precision than the model has.</p>
     <p>This is a <b>v1 approximation</b>: gross pre-tax income, rough PPP factors, broad wealth bands, and
     adjustable tails. Numbers will move as we refine the data, currency handling, and tax treatment.</p>
   </details>
@@ -322,7 +422,102 @@ function fmtBelowPct(below, aboveShare){
   return pct.toFixed(decimals) + "%";
 }
 
-function renderResult({ below, aboveShare, label, rankHtml, coversHtml, topHtml, message }){
+// ---- Two result views over the same numbers: "text" (prose) and "visual" (glanceable) ----
+let view = 'text';
+try { view = localStorage.getItem('oieb-view') || 'text'; } catch (e) {}
+let lastData = null;
+
+function render(data){
+  lastData = data;
+  if (view === 'visual') renderVisual(data);
+  else renderText(data);
+}
+
+// "top X%" share, 2 significant digits at most — no fake precision
+function fmtTopPct(share){
+  const pct = Math.max(0, share * 100);
+  if (pct >= 10) return Math.round(pct) + "%";
+  if (pct >= 1) return pct.toFixed(1) + "%";
+  if (pct >= 0.0001) return Number(pct.toPrecision(2)) + "%";
+  return "<0.0001%";
+}
+
+// unit chart: one figure = 1/10/100/... people so at most ~100 glyphs are drawn
+function pictoUnit(n){
+  let unit = 1;
+  while (n / unit > 100) unit *= 10;
+  return unit;
+}
+
+function buildPicto(pictoEl, keyEl, n, noun){
+  const unit = pictoUnit(n);
+  const count = Math.max(1, Math.round(n / unit));
+  let html = "";
+  for (let i = 0; i < count; i += 1){
+    html += '<svg aria-hidden="true"><use href="#pfig"/></svg>';
+  }
+  pictoEl.innerHTML = html;
+  pictoEl.setAttribute('aria-label', "about " + fmtRank(n) + " " + noun);
+  keyEl.textContent = unit === 1
+    ? "one figure = one " + (noun === "adults" ? "adult" : "person")
+    : "one figure ≈ " + unit.toLocaleString("en-US") + " " + noun;
+}
+
+function renderVisual(data){
+  document.getElementById('out').style.display = 'none';
+
+  const pctText = "TOP " + fmtTopPct(data.aboveShare);
+  const pctEl = document.getElementById('vPct');
+  pctEl.textContent = pctText;
+  pctEl.classList.toggle('small', pctText.length > 10);
+  document.getElementById('vScope').textContent = data.vScope;
+
+  const pos = Math.min(98.5, Math.max(1.5, data.below * 100));
+  document.getElementById('vFill').style.width = pos + "%";
+  document.getElementById('vDot').style.left = pos + "%";
+
+  document.getElementById('vRank').textContent = "#" + fmtRank(data.rankTop);
+  document.getElementById('vRankSub').textContent = data.vRankSub;
+  document.getElementById('vAmtLabel').textContent = data.vAmtLabel;
+  document.getElementById('vAmt').textContent = "≈ " + fmtUSD(data.amount);
+  document.getElementById('vAmtSub').textContent = data.vAmtSub;
+
+  const down = document.getElementById('vDown');
+  if (data.covered >= 2){
+    down.style.display = 'block';
+    document.getElementById('vDownLabel').textContent = data.vDownLabel;
+    document.getElementById('vDownNum').textContent = "≈ " + fmtRank(roundSig(data.covered)) + " " + data.noun;
+    document.getElementById('vDownSub').textContent = data.vDownSub;
+    buildPicto(document.getElementById('vDownPicto'), document.getElementById('vDownKey'), roundSig(data.covered), data.noun);
+  } else {
+    down.style.display = 'none';
+  }
+
+  const up = document.getElementById('vUp');
+  if (data.amount > 0){
+    up.style.display = 'block';
+    document.getElementById('vUpLabel').textContent = data.vUpLabel;
+    const upPicto = document.getElementById('vUpPicto');
+    const upKey = document.getElementById('vUpKey');
+    if (data.times >= 2){
+      document.getElementById('vUpNum').textContent = "≈ " + fmtRank(roundSig(data.times)) + " × you";
+      document.getElementById('vUpSub').textContent = data.vUpSub;
+      buildPicto(upPicto, upKey, roundSig(data.times), "people like you");
+    } else {
+      document.getElementById('vUpNum').textContent = "you are the top";
+      document.getElementById('vUpSub').textContent = data.vUpSub;
+      upPicto.innerHTML = "";
+      upPicto.removeAttribute('aria-label');
+      upKey.textContent = "";
+    }
+  } else {
+    up.style.display = 'none';
+  }
+
+  document.getElementById('vout').style.display = 'block';
+}
+
+function renderText({ below, aboveShare, label, rankHtml, coversHtml, topHtml, message }){
   const pct = below * 100;
   const topPctText = fmtBelowPct(below, aboveShare);
   const topPctEl = document.getElementById('topPct');
@@ -339,6 +534,7 @@ function renderResult({ below, aboveShare, label, rankHtml, coversHtml, topHtml,
   topEl.innerHTML = topHtml || "";
   topEl.style.display = topHtml ? 'block' : 'none';
   document.getElementById('msg').textContent = message;
+  document.getElementById('vout').style.display = 'none';
   document.getElementById('out').style.display = 'block';
 }
 
@@ -382,7 +578,7 @@ function computeIncome(){
         "(Fermi anchor: int$&nbsp;3&nbsp;billion in one year; see the notes below)."
       : "Now look up: by our int$&nbsp;3&nbsp;billion/yr anchor, you <b>are</b> the top of this pyramid.";
   }
-  renderResult({
+  render({
     below,
     aboveShare,
     coversHtml,
@@ -393,6 +589,20 @@ function computeIncome(){
     "That is roughly position <b>" + fmtRank(rankTop) + "</b> from the top " +
     "— " + richerText,
     message: reframe(topPct),
+    // visual view
+    amount: intD,
+    rankTop,
+    covered,
+    times: intD > 0 ? topCoveredIncome(intD) : 0,
+    noun: "people",
+    vScope: "of humanity by per-person income (PPP)",
+    vRankSub: "of 8.1 billion people",
+    vAmtLabel: "Per person, per year",
+    vAmtSub: "international $ (PPP)",
+    vDownLabel: "Your yearly income ≈ the combined income of",
+    vDownSub: "the world's poorest — Fermi floor of int$ 1/day",
+    vUpLabel: "The top earner's biggest year",
+    vUpSub: "Fermi anchor: int$ 3 billion in one year",
   });
 }
 
@@ -450,7 +660,7 @@ function computeWealth(){
       : "Now look up: by our $400&nbsp;billion anchor, you <b>are</b> the top of this pyramid.";
   }
 
-  renderResult({
+  render({
     below,
     aboveShare,
     coversHtml,
@@ -461,6 +671,20 @@ function computeWealth(){
     "That is roughly position <b>" + fmtRank(rankTop) + "</b> from the top among adults in the UBS 2024 wealth sample " +
     "— " + richerText,
     message: wealthReframe(topPct),
+    // visual view
+    amount: netWorth,
+    rankTop,
+    covered,
+    times: netWorth > 0 ? topCoveredWealth(netWorth) : 0,
+    noun: "adults",
+    vScope: "of adults by net worth (UBS 2024 sample)",
+    vRankSub: "of 3.8 billion adults in the sample",
+    vAmtLabel: "Net worth",
+    vAmtSub: "nominal USD, not PPP",
+    vDownLabel: "Your net worth ≈ the combined net worth of",
+    vDownSub: "the sample's poorest adults — debt ignored, so likely more",
+    vUpLabel: "The richest person's net worth",
+    vUpSub: "anchor: about $400 billion (2025, moves daily)",
   });
 }
 
@@ -473,7 +697,23 @@ function setMode(mode){
   document.getElementById('incomePanel').classList.toggle('active', mode === 'income');
   document.getElementById('wealthPanel').classList.toggle('active', mode === 'wealth');
   document.getElementById('out').style.display = 'none';
+  document.getElementById('vout').style.display = 'none';
+  lastData = null;
 }
+
+function setView(next){
+  view = next;
+  try { localStorage.setItem('oieb-view', next); } catch (e) {}
+  document.querySelectorAll('.vbtn').forEach(btn => {
+    const active = btn.dataset.view === next;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  if (lastData) render(lastData);
+}
+
+document.querySelectorAll('.vbtn').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
+setView(view); // reflect the saved choice on load
 
 document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => setMode(tab.dataset.mode)));
 document.getElementById('goIncome').addEventListener('click', computeIncome);
